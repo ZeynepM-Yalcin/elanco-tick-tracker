@@ -264,6 +264,25 @@ def map_data(
     db.close()
     return result
 
+@app.get("/sightings/timeline/{location}", tags=["Sightings"])
+def timeline(location: str, species: Optional[str] = Query(None)):
+    """Monthly sighting counts for a city - used for the sidebar chart."""
+    db     = get_db()
+    params = [location]
+    extra  = ""
+
+    if species:
+        extra = "AND LOWER(species) = LOWER(?)"
+        params.append(species)
+
+    rows = db.execute(
+        f"SELECT strftime('%Y-%m', date) as month, COUNT(*) as count FROM sightings WHERE LOWER(location) = LOWER(?) {extra} GROUP BY month ORDER BY month",
+        params
+    ).fetchall()
+    db.close()
+
+    return {"location": location, "timeline": [dict(r) for r in rows]}
+
 
 @app.get("/stats/by-region", tags=["Stats"])
 def stats_by_region(start_date: Optional[str] = Query(None), end_date: Optional[str] = Query(None)):
@@ -313,4 +332,33 @@ def stats_by_species(location: Optional[str] = Query(None)):
             {"species": r["species"], "latin_name": r["latin_name"], "count": r["count"], "percentage": round(r["count"] / total * 100, 1)}
             for r in rows
         ]
+    }
+
+@app.get("/stats/seasonal", tags=["Stats"])
+def seasonal(
+    location: str           = Query(..., description="City name"),
+    year:     Optional[str] = Query(None, description="4-digit year, or leave blank for all years"),
+):
+    """Monthly breakdown for a city - drives the seasonal activity chart."""
+    db     = get_db()
+    params = [location]
+    extra  = ""
+
+    if year:
+        extra = "AND strftime('%Y', date) = ?"
+        params.append(year)
+
+    rows = db.execute(
+        f"SELECT CAST(strftime('%m', date) AS INTEGER) as month_num, COUNT(*) as count FROM sightings WHERE LOWER(location) = LOWER(?) {extra} GROUP BY month_num ORDER BY month_num",
+        params
+    ).fetchall()
+    db.close()
+
+    MONTHS   = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+    by_month = {r["month_num"]: r["count"] for r in rows}
+
+    return {
+        "location": location,
+        "year":     year or "all years",
+        "data":     [{"month": MONTHS[i], "month_num": i+1, "count": by_month.get(i+1, 0)} for i in range(12)]
     }
