@@ -110,8 +110,8 @@ def load_seed_data():
 
 def fetch_external_api():
     """
-    Try to get extra records from the Elanco API and merge them in.
-    If it fails for any reason we just carry on - the seed data is enough.
+    try to get extra records from the Elanco API and merge them in
+    if it fails for any reason - carry on, the seed data is enough.
     """
     try:
         resp = requests.get(ELANCO_API, timeout=6)
@@ -159,7 +159,7 @@ def startup():
 
 ####HELPERS####
 def where_clause(conditions):
-    """Turns a list of conditions into a SQL WHERE clause."""
+    """turns a list of conditions into a SQL WHERE clause."""
     return ("WHERE " + " AND ".join(conditions)) if conditions else ""
 
 ####ROUTERS####
@@ -180,7 +180,7 @@ def get_sightings(
     page:       int           = Query(1,  ge=1),
     per_page:   int           = Query(50, ge=1, le=200),
 ):
-    """Paginated list of sightings with optional filters."""
+    """list of sightings with optional filters."""
     db = get_db()
     conditions, params = [], []
 
@@ -211,4 +211,106 @@ def get_sightings(
         "total":       total,
         "page":        page,
         "total_pages": max(1, -(-total // per_page)),
+    }
+
+@app.get("/sightings/map", tags=["Sightings"])
+def map_data(
+    species:    Optional[str] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date:   Optional[str] = Query(None),
+):
+    """
+    one summary point for each city for the map markers
+    groups everything by city so the frontend can draw one
+    proportional circle per city rather than 1000 individual pins
+    """
+    db = get_db()
+    conditions, params = [], []
+
+    if species:
+        conditions.append("LOWER(species) = LOWER(?)")
+        params.append(species)
+    if start_date:
+        conditions.append("date >= ?")
+        params.append(start_date)
+    if end_date:
+        conditions.append("date <= ?")
+        params.append(end_date + "T23:59:59")
+
+    w    = where_clause(conditions)
+    rows = db.execute(
+        f"SELECT location, COUNT(*) as total, MAX(date) as latest, lat, lng FROM sightings {w} GROUP BY location ORDER BY total DESC",
+        params
+    ).fetchall()
+
+    result = []
+    for row in rows:
+        #SQLite doesn't have a "most common value" function so:
+        #extra query to find the dominant species per city
+        top = db.execute(
+            f"SELECT species FROM sightings WHERE location = ? {('AND ' + ' AND '.join(conditions)) if conditions else ''} GROUP BY species ORDER BY COUNT(*) DESC LIMIT 1",
+            [row["location"]] + params
+        ).fetchone()
+
+        result.append({
+            "location":         row["location"],
+            "lat":              row["lat"],
+            "lng":              row["lng"],
+            "total":            row["total"],
+            "latest_sighting":  row["latest"],
+            "dominant_species": top["species"] if top else "Unknown",
+        })
+
+    db.close()
+    return result
+
+
+@app.get("/stats/by-region", tags=["Stats"])
+def stats_by_region(start_date: Optional[str] = Query(None), end_date: Optional[str] = Query(None)):
+    """total sightings per city with percentage of overall total"""
+    db = get_db()
+    conditions, params = [], []
+
+    if start_date:
+        conditions.append("date >= ?")
+        params.append(start_date)
+    if end_date:
+        conditions.append("date <= ?")
+        params.append(end_date + "T23:59:59")
+
+    w    = where_clause(conditions)
+    rows = db.execute(f"SELECT location, COUNT(*) as count FROM sightings {w} GROUP BY location ORDER BY count DESC", params).fetchall()
+    db.close()
+
+    total = sum(r["count"] for r in rows)
+    return {
+        "total": total,
+        "by_region": [
+            {"location": r["location"], "count": r["count"], "percentage": round(r["count"] / total * 100, 1)}
+            for r in rows
+        ]
+    }
+
+
+@app.get("/stats/by-species", tags=["Stats"])
+def stats_by_species(location: Optional[str] = Query(None)):
+    """sighting counts per species, with optional city filter."""
+    db     = get_db()
+    params = []
+    w      = ""
+
+    if location:
+        w = "WHERE LOWER(location) = LOWER(?)"
+        params.append(location)
+
+    rows  = db.execute(f"SELECT species, latin_name, COUNT(*) as count FROM sightings {w} GROUP BY species ORDER BY count DESC", params).fetchall()
+    db.close()
+
+    total = sum(r["count"] for r in rows)
+    return {
+        "total": total,
+        "by_species": [
+            {"species": r["species"], "latin_name": r["latin_name"], "count": r["count"], "percentage": round(r["count"] / total * 100, 1)}
+            for r in rows
+        ]
     }
