@@ -156,3 +156,59 @@ def startup():
     print("Fetching external API...")
     fetch_external_api()
     print("\nReady! Docs at http://localhost:8000/docs\n")
+
+####HELPERS####
+def where_clause(conditions):
+    """Turns a list of conditions into a SQL WHERE clause."""
+    return ("WHERE " + " AND ".join(conditions)) if conditions else ""
+
+####ROUTERS####
+@app.get("/", tags=["General"])
+def health_check():
+    db = get_db()
+    count = db.execute("SELECT COUNT(*) FROM sightings").fetchone()[0]
+    db.close()
+    return {"status": "running", "sightings_in_database": count}
+
+
+@app.get("/sightings", tags=["Sightings"])
+def get_sightings(
+    location:   Optional[str] = Query(None),
+    species:    Optional[str] = Query(None),
+    start_date: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    end_date:   Optional[str] = Query(None, description="YYYY-MM-DD"),
+    page:       int           = Query(1,  ge=1),
+    per_page:   int           = Query(50, ge=1, le=200),
+):
+    """Paginated list of sightings with optional filters."""
+    db = get_db()
+    conditions, params = [], []
+
+    if location:
+        conditions.append("LOWER(location) = LOWER(?)")
+        params.append(location)
+    if species:
+        conditions.append("LOWER(species) = LOWER(?)")
+        params.append(species)
+    if start_date:
+        conditions.append("date >= ?")
+        params.append(start_date)
+    if end_date:
+        conditions.append("date <= ?")
+        params.append(end_date + "T23:59:59")
+
+    w = where_clause(conditions)
+    total  = db.execute(f"SELECT COUNT(*) FROM sightings {w}", params).fetchone()[0]
+    offset = (page - 1) * per_page
+    rows   = db.execute(
+        f"SELECT * FROM sightings {w} ORDER BY date DESC LIMIT ? OFFSET ?",
+        params + [per_page, offset]
+    ).fetchall()
+    db.close()
+
+    return {
+        "data":        [dict(r) for r in rows],
+        "total":       total,
+        "page":        page,
+        "total_pages": max(1, -(-total // per_page)),
+    }
