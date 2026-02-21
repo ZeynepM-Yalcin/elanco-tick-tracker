@@ -1,0 +1,74 @@
+  <nav class="navbar">
+    <div class="brand">
+      <img src="elanco_logo.png" alt="Elanco" />
+      <div class="brand-divider"></div>
+      <span class="brand-text">UK Tick Tracker</span>
+    </div>
+    <div class="nav-links">
+      <a href="#map-section">Map</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <h1>Tick Sightings Across the UK</h1>
+      <p>Crowdsourced data to track tick activity and protect against diseases caused by dicks</p>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-card">
+        <span class="stat-num" id="stat-total">—</span>
+        <span class="stat-label">Total Sightings</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num">14</span>
+        <span class="stat-label">Cities</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num">5</span>
+        <span class="stat-label">Species</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── MAP ── -->
+  <section id="map-section" class="section">
+    <h2>Interactive Map</h2>
+    <p class="section-desc">Click a city to see details. Use the filters to narrow down the data</p>
+
+    <div class="filters">
+      <div class="filter-group">
+        <label for="filter-species">Species</label>
+        <select id="filter-species">
+          <option value="">All species</option>
+          <option>Marsh tick</option>
+          <option>Southern rodent tick</option>
+          <option>Passerine tick</option>
+          <option>Tree-hole tick</option>
+          <option>Fox/badger tick</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="filter-start">From</label>
+        <input type="date" id="filter-start" value="2012-01-01" />
+      </div>
+      <div class="filter-group">
+        <label for="filter-end">To</label>
+        <input type="date" id="filter-end" value="2024-12-31" />
+      </div>
+      <button class="btn" id="apply-filters">Apply</button>
+      <button class="btn btn-outline" id="reset-filters">Reset</button>
+    </div>
+
+    <div class="map-layout">
+      <div id="map"></div>
+
+      <aside id="sidebar" class="sidebar hidden">
+        <button id="close-sidebar" class="close-btn">✕</button>
+        <div id="sidebar-content"></div>
+      </aside>
+    </div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>

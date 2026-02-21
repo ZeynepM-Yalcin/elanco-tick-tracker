@@ -1,0 +1,93 @@
+:root {
+  --blue:        #0066CC;
+  --blue-dark:   #004d99;
+  --blue-darker: #003366;
+  --blue-pale:   #e6f0fa;
+  --black:       #0a0a0a;
+  --text:        #1a1a1a;
+  --text-mid:    #555;
+  --border:      #d0dce8;
+  --bg:          #f4f7fb;
+  --white:       #fff;
+  --red:         #cc2200;
+  --radius:      8px;
+  --shadow:      0 2px 8px rgba(0,0,0,.09);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html  { scroll-behavior: smooth; }
+body  { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+/* ── NAV ── */
+.navbar {
+  position: sticky; top: 0; z-index: 500;
+  background: var(--black); color: white;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 1.5rem; height: 58px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.35);
+}
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand img { height: 34px; width: auto; }
+.brand-divider { width: 1px; height: 28px; background: rgba(255,255,255,.25); }
+.brand-text { font-weight: 700; font-size: 1rem; color: white; letter-spacing: .2px; }
+
+.nav-links a {
+  color: rgba(255,255,255,.75); text-decoration: none;
+  padding: 6px 13px; border-radius: 5px; font-size: .88rem; font-weight: 500;
+  transition: background .15s, color .15s;
+}
+.nav-links a:hover { background: rgba(255,255,255,.12); color: white; }
+
+/* ── HERO ── */
+.hero {
+  background: linear-gradient(135deg, var(--blue-darker) 0%, var(--blue) 100%);
+  color: white; padding: 2.2rem 1.5rem;
+  display: flex; flex-wrap: wrap; gap: 1.5rem;
+  align-items: center; justify-content: space-between;
+  border-bottom: 4px solid var(--blue-dark);
+}
+.hero h1 { font-size: 1.75rem; font-weight: 800; margin-bottom: .4rem; letter-spacing: -.3px; }
+.hero p   { opacity: .85; max-width: 480px; font-size: .95rem; }
+.hero-stats { display: flex; gap: 1rem; flex-wrap: wrap; }
+.stat-card  {
+  background: rgba(255,255,255,.13); border: 1px solid rgba(255,255,255,.2);
+  border-radius: var(--radius); padding: .9rem 1.3rem; text-align: center; min-width: 105px;
+}
+.stat-num   { display: block; font-size: 2rem; font-weight: 800; line-height: 1.1; }
+.stat-label { font-size: .72rem; opacity: .8; text-transform: uppercase; letter-spacing: .5px; }
+
+/* ── SECTIONS ── */
+.section { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+.section h2 { font-size: 1.35rem; font-weight: 700; color: var(--blue-darker); margin-bottom: .3rem; }
+.section-desc { color: var(--text-mid); margin-bottom: 1.2rem; font-size: .93rem; }
+
+/* ── FILTERS ── */
+.filters {
+  background: var(--white); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: .9rem 1.1rem; display: flex; flex-wrap: wrap; align-items: flex-end; gap: .9rem;
+  margin-bottom: 1rem; box-shadow: var(--shadow);
+}
+.filter-group { display: flex; flex-direction: column; gap: 3px; }
+.filter-group label { font-size: .75rem; font-weight: 700; color: var(--text-mid); text-transform: uppercase; letter-spacing: .5px; }
+.filter-group select,
+.filter-group input[type="date"] {
+  border: 1.5px solid var(--border); border-radius: 5px;
+  padding: 6px 9px; font-size: .88rem; background: var(--white); min-width: 140px;
+  transition: border-color .15s;
+}
+.filter-group select:focus,
+.filter-group input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,102,204,.12); }
+
+/* ── BUTTONS ── */
+.btn {
+  padding: 7px 18px; border-radius: 5px; font-size: .88rem; font-weight: 700;
+  cursor: pointer; border: 2px solid var(--blue); background: var(--blue); color: white;
+  transition: background .15s, border-color .15s; letter-spacing: .2px;
+}
+.btn:hover { background: var(--blue-dark); border-color: var(--blue-dark); }
+.btn-outline { background: transparent; color: var(--blue); }
+.btn-outline:hover { background: var(--blue-pale); }
+
+/* ── MAP LAYOUT ── */
+.map-layout { display: flex; gap: 1rem; height: 500px; }
+#map { flex: 1; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); }
