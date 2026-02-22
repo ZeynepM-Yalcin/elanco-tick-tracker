@@ -5,6 +5,7 @@
 - App: http://localhost:8000/app
 - API Docs: http://localhost:8000/docs
 - Repo: https://github.com/ZeynepM-Yalcin/elanco-tick-tracker
+- I also uploaded the database to the backend, but this is actually in the gitignore. The database is created when the program runs
 
 ### Overview
 This is a full-stack web application for mapping and reporting tick sightings across the UK. It processes the provided Excel dataset and integrates with the Elanco API endpoint, storing everything in a local SQLite database and serving through a REST API built with FastAPI. The frontendis a single page app with an interactive Leaflet map, Chart.js visualisations, a species education section and a sighting report form with an image upload.
@@ -85,5 +86,6 @@ The external API call uses a two-layer try/except — ConnectionError is caught 
 | --| --| --|
 | Accessibility features| Done| Semantic HTML, labels on all inputs, alt text, focus styles, contrast, responsive layout|
 | Wireframes|Not done |Layout designed directly in code, no separate wireframe documents produced |
+
 
 
