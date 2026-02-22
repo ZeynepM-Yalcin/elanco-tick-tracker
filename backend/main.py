@@ -2,16 +2,20 @@
 To run:
     uvicorn main:app --reload --port 8000
 
-then visit http://localhost:8000/docs to see all the endpoints.
+then visit http://localhost:8000/docs to see all the endpoints
+or go to http://localhost:8000/app to open the actual UI
 """
 
 import os
 import json
+import uuid
 import sqlite3
 import requests
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Form, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from typing import Optional
 
 
@@ -29,13 +33,23 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-BASE_DIR     = os.path.dirname(__file__)
+#using __file__ so all paths work regardless of where you run uvicorn from
+BASE_DIR     = os.path.dirname(__file__)           # points to backend/
+FRONTEND_DIR = os.path.join(BASE_DIR, "..", "frontend")  # points to frontend/
 DB_PATH      = os.path.join(BASE_DIR, "tick_tracker.db")
 SEED_FILE    = os.path.join(BASE_DIR, "seed_data.json")
+UPLOAD_DIR   = os.path.join(BASE_DIR, "uploads")
 ELANCO_API   = "https://dev-task.elancoapps.com/sightings"
 
-#coordinates for UK cities in the dataset
+os.makedirs(UPLOAD_DIR, exist_ok=True) #create uploads folder if it doesnt exist yet
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+#serve the frontend JS/CSS/images through /static
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+ALLOWED_IMAGE_TYPES = {"png", "jpg", "jpeg", "gif", "webp"}
+
+#hardcoded coordinates for UK cities in the dataset
+#the excel data only has city names, not coordinates so i looked these up
+#and mapped them manually so map markers work without any geocoding api
 CITY_COORDS = {
     "London":      (51.5074, -0.1278),
     "Manchester":  (53.4808, -2.2426),
@@ -58,12 +72,13 @@ CITY_COORDS = {
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row  #row["column"] instead of row[0]
+    conn.row_factory = sqlite3.Row  #row["column"] instead of row[0], easier to read
     return conn
 
 
 def init_db():
     db = get_db()
+    #safe to call everytime on startup since it only actually creates the table the very first time
     db.execute("""
         CREATE TABLE IF NOT EXISTS sightings (
             id               TEXT PRIMARY KEY,
@@ -80,7 +95,10 @@ def init_db():
 
 
 def load_seed_data():
-    """load the 1000 sightings from the excel export JSON into the database"""
+    """load the 1000 sightings from the excel export JSON into the database
+    INSERT OR IGNORE means if we restart the server,
+    duplicate records won't get added again — the primary key (id) handles that
+    """
     if not os.path.exists(SEED_FILE):
         print("  seed_data.json not found, skipping")
         return
@@ -96,10 +114,10 @@ def load_seed_data():
             continue  #skipping incomplete records
 
         city = r["location"]
-        lat, lng = CITY_COORDS.get(city, (None, None))
+        lat, lng = CITY_COORDS.get(city, (None, None))#return none none if coordinates not found
 
         db.execute(
-            "insert or ignore into sightings (id, date, location, species, latin_name, lat, lng) VALUES (?,?,?,?,?,?,?)",
+            "INSERT OR IGNORE INTO sightings (id, date, location, species, latin_name, lat, lng) VALUES (?,?,?,?,?,?,?)",
             [r["id"], r["date"][:19], city, r.get("species", "Unknown"), r.get("latinName", ""), lat, lng]
         )
         inserted += 1
@@ -149,6 +167,8 @@ def fetch_external_api():
 
 @app.on_event("startup")
 def startup():
+    #this runs automatically when uvicorn starts, before any requests come in
+    #create table the load data into it
     print("Setting up database...")
     init_db()
     print("Loading seed data...")
@@ -159,12 +179,20 @@ def startup():
 
 ####HELPERS####
 def where_clause(conditions):
-    """turns a list of conditions into a SQL WHERE clause."""
+    """turns a list of conditions into a SQL WHERE clause
+    returns an empty string if the list is empty, so queries still work with no filters"""
     return ("WHERE " + " AND ".join(conditions)) if conditions else ""
 
 ####ROUTERS####
+@app.get("/app", include_in_schema=False)
+def serve_frontend():
+    #serves index.html when you visit /app in the browser
+    #include_in_schema=False keeps it out of the /docs page since it's not a real API endpoint
+    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+
 @app.get("/", tags=["General"])
 def health_check():
+    #quick check that the server is running and db is loaded
     db = get_db()
     count = db.execute("SELECT COUNT(*) FROM sightings").fetchone()[0]
     db.close()
@@ -184,6 +212,8 @@ def get_sightings(
     db = get_db()
     conditions, params = [], []
 
+    #build up the WHERE clause dynamically based on whichever filters were passed in
+    #using LOWER() on both sides makes the comparison case-insensitive
     if location:
         conditions.append("LOWER(location) = LOWER(?)")
         params.append(location)
@@ -206,6 +236,7 @@ def get_sightings(
     ).fetchall()
     db.close()
 
+    #rounds up without importing math
     return {
         "data":        [dict(r) for r in rows],
         "total":       total,
@@ -266,7 +297,7 @@ def map_data(
 
 @app.get("/sightings/timeline/{location}", tags=["Sightings"])
 def timeline(location: str, species: Optional[str] = Query(None)):
-    """Monthly sighting counts for a city - used for the sidebar chart."""
+    """monthly sighting counts for a city - used for the sidebar chart"""
     db     = get_db()
     params = [location]
     extra  = ""
@@ -313,7 +344,7 @@ def stats_by_region(start_date: Optional[str] = Query(None), end_date: Optional[
 
 @app.get("/stats/by-species", tags=["Stats"])
 def stats_by_species(location: Optional[str] = Query(None)):
-    """sighting counts per species, with optional city filter."""
+    """sighting counts per species, with optional city filter"""
     db     = get_db()
     params = []
     w      = ""
@@ -339,7 +370,7 @@ def seasonal(
     location: str           = Query(..., description="City name"),
     year:     Optional[str] = Query(None, description="4-digit year, or leave blank for all years"),
 ):
-    """Monthly breakdown for a city - drives the seasonal activity chart."""
+    """monthly breakdown for a city - drives the seasonal activity chart"""
     db     = get_db()
     params = [location]
     extra  = ""
@@ -355,6 +386,7 @@ def seasonal(
     db.close()
 
     MONTHS   = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+    #convert the rows into a dict keyed by month number so can easily fill in the gaps
     by_month = {r["month_num"]: r["count"] for r in rows}
 
     return {
@@ -362,3 +394,65 @@ def seasonal(
         "year":     year or "all years",
         "data":     [{"month": MONTHS[i], "month_num": i+1, "count": by_month.get(i+1, 0)} for i in range(12)]
     }
+
+@app.post("/report", status_code=201, tags=["Report"])
+async def report_sighting(
+    date:        str                  = Form(...),
+    time:        str                  = Form(...),
+    location:    str                  = Form(...),
+    species:     str                  = Form(...),
+    reported_by: str                  = Form("Anonymous"),
+    image:       Optional[UploadFile] = File(None),
+):
+    """submit a new tick sighting. accepts multipart/form-data so can handle the optional photo"""
+    image_filename = None
+
+    if image and image.filename:
+        ext = image.filename.rsplit(".", 1)[-1].lower()
+        if ext not in ALLOWED_IMAGE_TYPES:
+            raise HTTPException(status_code=400, detail="Image must be png, jpg, jpeg, gif, or webp")
+
+        contents = await image.read()
+        if len(contents) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Image must be under 5MB")
+
+        image_filename = f"{uuid.uuid4().hex}.{ext}"
+        with open(os.path.join(UPLOAD_DIR, image_filename), "wb") as f:
+            f.write(contents)
+
+    lat, lng = CITY_COORDS.get(location, (None, None))
+    db = get_db()
+
+    try:
+        db.execute(
+            "INSERT INTO sightings (id, date, location, species, latin_name, lat, lng, image_path, reported_by_user) VALUES (?,?,?,?,?,?,?,?,?)",
+            [uuid.uuid4().hex, f"{date}T{time}:00", location, species, "", lat, lng, image_filename, reported_by]
+        )
+        db.commit()
+    except Exception as e:
+        db.close()
+        raise HTTPException(status_code=500, detail=str(e))
+
+    db.close()
+    return {"success": True, "message": "Sighting recorded - thank you!"}
+
+
+@app.get("/meta/cities", tags=["Meta"])
+def get_cities():
+    """list of UK cities with coordinates"""
+    return [{"city": city, "lat": lat, "lng": lng} for city, (lat, lng) in sorted(CITY_COORDS.items())]
+
+
+@app.get("/meta/species", tags=["Meta"])
+def get_species():
+    """distinct species in the database"""
+    db   = get_db()
+    rows = db.execute("SELECT DISTINCT species, latin_name FROM sightings ORDER BY species").fetchall()
+    db.close()
+    return [dict(r) for r in rows]
+
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+
+@app.get("/app", include_in_schema=False)
+def serve_frontend():
+    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
