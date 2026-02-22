@@ -1,3 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UK Tick Tracker</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
   <nav class="navbar">
     <div class="brand">
       <img src="elanco_logo.png" alt="Elanco" />
@@ -6,13 +21,14 @@
     </div>
     <div class="nav-links">
       <a href="#map-section">Map</a>
+      <a href="#education">Learn</a>
     </div>
   </nav>
 
   <header class="hero">
     <div>
       <h1>Tick Sightings Across the UK</h1>
-      <p>Crowdsourced data to track tick activity and protect against diseases caused by dicks</p>
+      <p>Crowdsourced data to track tick activity and protect against tick-borne diseases.</p>
     </div>
     <div class="hero-stats">
       <div class="stat-card">
@@ -33,7 +49,7 @@
   <!-- ── MAP ── -->
   <section id="map-section" class="section">
     <h2>Interactive Map</h2>
-    <p class="section-desc">Click a city to see details. Use the filters to narrow down the data</p>
+    <p class="section-desc">Click a city to see details. Use the filters to narrow down the data.</p>
 
     <div class="filters">
       <div class="filter-group">
@@ -66,6 +82,117 @@
         <button id="close-sidebar" class="close-btn">✕</button>
         <div id="sidebar-content"></div>
       </aside>
+    </div>
+  </section>
+
+  <!-- ── EDUCATION ── -->
+  <section id="education" class="section">
+    <h2>Learn About Ticks</h2>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="species">Species Guide</button>
+      <button class="tab-btn" data-tab="prevention">Prevention Tips</button>
+      <button class="tab-btn" data-tab="seasonal">Seasonal Activity</button>
+    </div>
+
+    <div id="tab-species" class="tab-panel">
+      <div class="card-grid">
+        <div class="card">
+          <h3>Marsh tick</h3>
+          <p class="latin">Ixodes apronophorus</p>
+          <p>Found in wetlands and grassland near water. Mainly targets small rodents but will bite dogs and humans.</p>
+          <span class="badge badge-medium">Medium risk</span>
+        </div>
+        <div class="card">
+          <h3>Southern rodent tick</h3>
+          <p class="latin">Ixodes acuminatus</p>
+          <p>Mainly in southern England and Wales. Prefers rodents but can transmit Lyme disease to people and pets.</p>
+          <span class="badge badge-medium">Medium risk</span>
+        </div>
+        <div class="card">
+          <h3>Passerine tick</h3>
+          <p class="latin">Dermacentor frontalis</p>
+          <p>The most reported species in the dataset. Spreads widely via migratory birds as hosts.</p>
+          <span class="badge badge-high">High risk</span>
+        </div>
+        <div class="card">
+          <h3>Tree-hole tick</h3>
+          <p class="latin">Ixodes arboricola</p>
+          <p>Hides in tree hollows and nest boxes. Much less likely to bite humans than other species.</p>
+          <span class="badge badge-low">Low risk</span>
+        </div>
+        <div class="card">
+          <h3>Fox/badger tick</h3>
+          <p class="latin">Ixodes hexagonus</p>
+          <p>Common in urban areas wherever foxes or badgers are present. Regularly bites dogs and cats.</p>
+          <span class="badge badge-high">High risk</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-prevention" class="tab-panel hidden">
+      <div class="card-grid">
+        <div class="card">
+          <div class="tip-icon">👗</div>
+          <h3>Cover Up</h3>
+          <p>Wear long sleeves and tuck trousers into socks in long grass or woodland. Light colours make ticks easier to spot.</p>
+        </div>
+        <div class="card">
+          <div class="tip-icon">🦟</div>
+          <h3>Use Repellent</h3>
+          <p>DEET-based repellents work on skin and clothing. Ask your vet about tick treatments for dogs and cats.</p>
+        </div>
+        <div class="card">
+          <div class="tip-icon">🔍</div>
+          <h3>Check After Going Out</h3>
+          <p>Ticks like warm hidden spots: armpits, groin, scalp, behind knees. Check yourself and pets within a few hours.</p>
+        </div>
+        <div class="card">
+          <div class="tip-icon">🩺</div>
+          <h3>Remove Correctly</h3>
+          <p>Use tweezers close to the skin and pull steadily upward. Don't twist, squeeze, or use Vaseline.</p>
+        </div>
+        <div class="card">
+          <div class="tip-icon">📅</div>
+          <h3>Know the Season</h3>
+          <p>Most active March–June and August–November, but our data shows sightings all year round.</p>
+        </div>
+        <div class="card">
+          <div class="tip-icon">🏥</div>
+          <h3>Watch for Symptoms</h3>
+          <p>A "bullseye" rash, flu-like symptoms, or joint pain after a bite - see a GP quickly. Early treatment works best.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-seasonal" class="tab-panel hidden">
+      <p class="section-desc">Select a city and year to see how sightings vary across the months.</p>
+      <div class="filters">
+        <div class="filter-group">
+          <label for="s-city">City</label>
+          <select id="s-city">
+            <option>Birmingham</option><option>Bristol</option><option>Cardiff</option>
+            <option>Edinburgh</option><option>Glasgow</option><option>Leeds</option>
+            <option>Leicester</option><option>Liverpool</option><option>London</option>
+            <option>Manchester</option><option>Newcastle</option><option>Nottingham</option>
+            <option>Sheffield</option><option>Southampton</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="s-year">Year</label>
+          <select id="s-year">
+            <option value="">All years</option>
+            <option>2012</option><option>2013</option><option>2014</option><option>2015</option>
+            <option>2016</option><option>2017</option><option>2018</option><option>2019</option>
+            <option>2020</option><option>2021</option><option>2022</option><option>2023</option>
+            <option>2024</option>
+          </select>
+        </div>
+        <button class="btn" id="load-seasonal">Load Chart</button>
+      </div>
+      <div class="chart-box">
+        <canvas id="seasonal-chart"></canvas>
+      </div>
     </div>
   </section>
 
