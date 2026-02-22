@@ -1,6 +1,6 @@
 """
 To run:
-    uvicorn main:app --reload --port 8000
+    uvicorn backend.main:app --reload --port 8000
 
 then visit http://localhost:8000/docs to see all the endpoints
 or go to http://localhost:8000/app to open the actual UI
@@ -23,7 +23,7 @@ from typing import Optional
 
 app = FastAPI(
     title="UK Tick Tracker API",
-    description="Crowdsourced tick sighting data across the UK. Built for the Elanco placement challenge",
+    description="Tick sighting data across the UK. Built for the Elanco placement challenge",
     version="0.1.0",
 )
 
@@ -80,15 +80,17 @@ def init_db():
     db = get_db()
     #safe to call everytime on startup since it only actually creates the table the very first time
     db.execute("""
-        CREATE TABLE IF NOT EXISTS sightings (
-            id               TEXT PRIMARY KEY,
-            date             TEXT NOT NULL,
-            location         TEXT NOT NULL,
-            species          TEXT,
-            latin_name       TEXT,
-            lat              REAL,
-            lng              REAL
-        )
+    CREATE TABLE IF NOT EXISTS sightings (
+        id               TEXT PRIMARY KEY,
+        date             TEXT NOT NULL,
+        location         TEXT NOT NULL,
+        species          TEXT,
+        latin_name       TEXT,
+        lat              REAL,
+        lng              REAL,
+        image_path       TEXT,
+        reported_by_user TEXT DEFAULT 'System'
+    )
     """)
     db.commit()
     db.close()
