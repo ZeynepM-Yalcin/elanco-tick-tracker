@@ -20,7 +20,24 @@ SQLite needs no server, no configuration and no connection string. The database 
 No build step, no node modules, no bundler. The frontend is three files you can read straight through. For a project of this scope a framework like React would have added complexity without adding anything meaningful, the app right now loads instantly and works the same way. Leaflet and Chart.js are fulled fron CDN so there are zero frontend dependencies to install.
 
 #### Serving the frontend through FastAPI
-Opening index.html as a file:// URL causes the browser to block API requests due to CORS policy. 
+Opening index.html as a file:// URL causes the browser to block API requests due to CORS policy. Rather than running a separate dev server, I mounted the frontend folder as a static directory in FastAPI and added a /app route that serves index.html. One server handles both the API and th UI thus, simpler to run and simpler to explain.
+
+#### Data handling - seed data strategy
+The Excel file is the dataset provided in the brief, so I treated it as the guaranteed data source. The API endpoint has 'dev' in its URL, which indicates a development environment rather than a production system. Dev environments get restarted, go down for maintanance, or could be retired. There is also no guarantee that the person evaluating the submission will have internet access or will not be behind a firewall. Depending on the API being available at runtime would be a fragile design.
+
+Instead, I pre-converted the Excel file into seed_data.json using a separate script and committed to the repository. This is only done once. The backend loads this as its guaranteed baseline on every startup. The live API is still fetched on startup and any new records are merged in, but it's not a dependency. If it fails for any reason the app continues working normally. 
+
+#### Data handling - duplicated and incomplete records
+Both the seed loader and the API fetcher use INSERT OR IGNORE rather than a plain INSERT. SQLite enforeces the id column as a primary key, so any duplicate is silently skipped. Restarting the server never creates duplicate records and API records that overlap with seed data are not double counted. Before any insert, the code also checks that the three minimum required fields are present (id, date, location) and skips the record entirely if any are missing, rather than inserting a row with NULL values that would break the frontend.
+
+#### Search and filtering
+Filters are built as a dynamic WHERE clause, each filter parameter is only added to the conditions list if it was actually passed in, so requests with no filters return all records without any unnecessary SQL. LOWER() is applied to both sides of string comparisons so filtering is always case-insensitive. The end date filter appends T23:59:59 server-side so filtering to a specific date includes the entire day, not just records from midnight.
+
+#### Data reporting - endpoint design
+The brief was the starting point - it explicitly asked for 'number of sightings per region' and 'trends over time', which mapped directly to /stats/by-region and /sightings/timeline. From there, standard REST conventions guided the naming: endpoints are nouns not verbs, grouped by what they represent. Raw sighting records live under /sightings, aggregate insights under /stats. The map gets its own endpoint (/sightings/map) because it needs a different shape of data - one summary object per city rather than individual records - so grouping 1,000 rows in the browser would have been wasteful.
+
+#### Error handling
+The external API call uses a two-layer try/except — ConnectionError is caught specifically for a clear log message, and a broad Exception catches everything else so no edge case can crash the startup sequence. Using a 6second timeout prevents the server hanging if the API is slow rather than fully down. On the frontend, all API calls go through a single fetchJSON() helper that wraps fetch() in a try/catch and returns null on failure, every caller treats null as a no-op so a broken endpoint never causes a white screen
 
 ### How to Run
 1. Instal dependencies
@@ -68,4 +85,5 @@ Opening index.html as a file:// URL causes the browser to block API requests due
 | --| --| --|
 | Accessibility features| Done| Semantic HTML, labels on all inputs, alt text, focus styles, contrast, responsive layout|
 | Wireframes|Not done |Layout designed directly in code, no separate wireframe documents produced |
+
 
