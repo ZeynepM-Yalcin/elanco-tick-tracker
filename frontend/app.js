@@ -1,9 +1,10 @@
-const API = "http://localhost:8000";
+const API = "http://localhost:8000"; //base url for every api call
 
 //shortcut so i dont have to write document.getElementById everywhere
 function el(id) { return document.getElementById(id); }
 
 //colours for each tick species — used on the map circles and charts
+//keeping them in one place so i can change easily if i want
 const speciesColours = {
   "Marsh tick":           "#43a047",
   "Southern rodent tick": "#fb8c00",
@@ -11,12 +12,13 @@ const speciesColours = {
   "Tree-hole tick":       "#8e24aa",
   "Fox/badger tick":      "#3949ab",
 };
-
+//fall back to grey if a species isnt in the list
 function getColour(species) {
   return speciesColours[species] || "#757575";
 }
 
 //helper to fetch json from the api without repeating try/catch everywhere
+//returns null on failure
 async function fetchJSON(url) {
   try {
     const response = await fetch(url);
@@ -40,14 +42,16 @@ function formatDate(dateStr) {
 
 // MAP : leaflet setup and marker rendering
 
-
+//centre the map roughly over the middle of england, zoom 6 shows the whole uk
 const map = L.map("map", { center: [53.5, -2.0], zoom: 6 });
 
+//OpenStreetMap tiles — free and no API key needed
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: "© OpenStreetMap contributors",
 }).addTo(map);
 
-//layer group so can clear and redraw markers easily
+//putting markers in a layer group means i can call clearLayers() to wipe them all
+//when filters change, instead of tracking and removing each one individually
 const markerLayer = L.layerGroup().addTo(map);
 
 //reads the current filter values and builds query params from them
@@ -81,6 +85,7 @@ async function refreshMap() {
   const highest = Math.max(...cities.map(c => c.total), 1);
 
   cities.forEach(city => {
+    //skip any city that's missing coordinates (just in case)
     if (!city.lat || !city.lng) return;
 
     const circle = L.circleMarker([city.lat, city.lng], {
@@ -103,7 +108,7 @@ async function refreshMap() {
 
 
 //keeping track of chart instances so they can be destroyed them before making new ones
-//(chart.js gets upset if you don't do this lol)
+//chart.js throws an error if you try to draw on a canvas that already has a chart on it
 let cityChart = null;
 
 async function showCityPanel(city, filterParams) {
@@ -208,7 +213,8 @@ async function loadSeasonalChart() {
 
   const params = new URLSearchParams({ location: city });
   if (year) params.set("year", year);
-
+  //the API always returns all 12 months even if some are zero,
+  //so the chart x-axis is always complete — no missing months
   const data = await fetchJSON(`${API}/stats/seasonal?${params}`);
   if (!data) return;
 
