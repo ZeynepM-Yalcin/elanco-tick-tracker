@@ -9,7 +9,20 @@
 ### Overview
 This is a full-stack web application for mapping and reporting tick sightings across the UK. It processes the provided Excel dataset and integrates with the Elanco API endpoint, storing everything in a local SQLite database and serving through a REST API built with FastAPI. The frontendis a single page app with an interactive Leaflet map, Chart.js visualisations, a species education section and a sighting report form with an image upload.
 
-### How to RuN
+### Technical Choices
+#### FastAPI for the backend
+I chose FastAPI because it auto generates a fully interactive Swagger UI at /docs, so every endpoint can be explored and tested without any extra tooling. It also handles query parameter validation and type checking automatically, which saved a lot of boilerplate. Python felt like the right language for data focused project where I might want to add analytics or ML features later.
+
+#### SQLite for the database
+SQLite needs no server, no configuration and no connection string. The database is a single file that gets created automatically on first run. For a dataset of around 1,000 records it is more than fast enough and it means anyone running the project has one less thing to install or set up before the app works.
+
+#### Vanilla Javascript for the frontend
+No build step, no node modules, no bundler. The frontend is three files you can read straight through. For a project of this scope a framework like React would have added complexity without adding anything meaningful, the app right now loads instantly and works the same way. Leaflet and Chart.js are fulled fron CDN so there are zero frontend dependencies to install.
+
+#### Serving the frontend through FastAPI
+Opening index.html as a file:// URL causes the browser to block API requests due to CORS policy. 
+
+### How to Run
 1. Instal dependencies
 
    `pip install -r requirements.txt`
@@ -55,3 +68,4 @@ This is a full-stack web application for mapping and reporting tick sightings ac
 | --| --| --|
 | Accessibility features| Done| Semantic HTML, labels on all inputs, alt text, focus styles, contrast, responsive layout|
 | Wireframes|Not done |Layout designed directly in code, no separate wireframe documents produced |
+
