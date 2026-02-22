@@ -176,6 +176,70 @@ async function showCityPanel(city, filterParams) {
 }
 
 
+// TABS : switches between species guide / prevention / seasonal
+
+
+function setupTabs() {
+  const buttons = document.querySelectorAll(".tab-btn");
+  const panels = document.querySelectorAll(".tab-panel");
+
+  buttons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      //deactivate all tabs first
+      buttons.forEach(b => b.classList.remove("active"));
+      panels.forEach(p => p.classList.add("hidden"));
+
+      //then activate the one that was clicked
+      btn.classList.add("active");
+      el("tab-" + btn.dataset.tab).classList.remove("hidden");
+    });
+  });
+}
+
+
+// SEASONAL CHART : bar chart showing monthly sightings per city
+
+
+let yearlyChart = null;
+
+async function loadSeasonalChart() {
+  const city = el("s-city").value;
+  const year = el("s-year").value;
+
+  const params = new URLSearchParams({ location: city });
+  if (year) params.set("year", year);
+
+  const data = await fetchJSON(`${API}/stats/seasonal?${params}`);
+  if (!data) return;
+
+  //destroy old chart before creating a new one
+  if (yearlyChart) yearlyChart.destroy();
+
+  const chartLabel = year ? `${city} ${year}` : city;
+
+  yearlyChart = new Chart(el("seasonal-chart").getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: data.data.map(d => d.month),
+      datasets: [{
+        label: chartLabel,
+        data: data.data.map(d => d.count),
+        backgroundColor: "#2d7a4f99",
+        borderColor: "#2d7a4f",
+        borderWidth: 1.5,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: "top" } },
+      scales: {
+        x: { grid: { display: false } },
+        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+      }
+    }
+  });
+}
 
 // STARTUP : wire everything up when the page loads
 
@@ -196,12 +260,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     el("sidebar").classList.add("hidden");
   });
 
+  //seasonal chart
+  el("load-seasonal").addEventListener("click", loadSeasonalChart);
+
+  //set up the tabs
+  setupTabs();
+
   //load the map straight away
   refreshMap();
 
-  //fetch the total count for the hero section
+  // etch the total count for the hero section
   const stats = await fetchJSON(`${API}/`);
   if (stats) {
     el("stat-total").textContent = stats.sightings_in_database.toLocaleString();
   }
+
+  //load the seasonal chart with default values
+  loadSeasonalChart();
 });
