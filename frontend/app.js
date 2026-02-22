@@ -251,6 +251,7 @@ async function loadSeasonalChart() {
 
 
 document.addEventListener("DOMContentLoaded", async () => {
+  console.log("DOM ready");
 
   //filter buttons
   el("apply-filters").addEventListener("click", refreshMap);
@@ -280,7 +281,82 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (stats) {
     el("stat-total").textContent = stats.sightings_in_database.toLocaleString();
   }
-
+  console.log("about to attach form listener");
   //load the seasonal chart with default values
   loadSeasonalChart();
+
+  // REPORT FORM : handle submission
+  el("report-form").addEventListener("submit", async (e) => {
+    e.preventDefault(); //stop the browser doing a page reload on submit
+
+    //clear any previous error messages and invalid styles
+    ["f-date", "f-time", "f-location", "f-species"].forEach(id => {
+      el(id).classList.remove("invalid");
+    });
+    ["err-date", "err-time", "err-location", "err-species"].forEach(id => {
+      el(id).textContent = "";
+    });
+
+    //validate required fields before sending anything to the API
+    let valid = true;
+    if (!el("f-date").value)     { el("err-date").textContent     = "Date is required";     el("f-date").classList.add("invalid");     valid = false; }
+    if (!el("f-time").value)     { el("err-time").textContent     = "Time is required";     el("f-time").classList.add("invalid");     valid = false; }
+    if (!el("f-location").value) { el("err-location").textContent = "Location is required"; el("f-location").classList.add("invalid"); valid = false; }
+    if (!el("f-species").value)  { el("err-species").textContent  = "Species is required";  el("f-species").classList.add("invalid");  valid = false; }
+    if (!valid) return;
+
+    //build a FormData object — needed because the endpoint accepts multipart (for the image)
+    const formData = new FormData();
+    formData.append("date",        el("f-date").value);
+    formData.append("time",        el("f-time").value);
+    formData.append("location",    el("f-location").value);
+    formData.append("species",     el("f-species").value);
+    formData.append("reported_by", el("f-name").value || "Anonymous");
+
+    const imageFile = el("f-image").files[0];
+    if (imageFile) formData.append("image", imageFile);
+
+    //disable the button while the request is in flight so the user cant double-submit
+    const btn = el("submit-btn");
+    btn.disabled = true;
+    btn.textContent = "Submitting...";
+
+    const msgEl = el("form-msg");
+    msgEl.className = "form-msg hidden";
+
+    try {
+      const response = await fetch(`${API}/report`, { method: "POST", body: formData });
+      const data = await response.json();
+
+      if (response.ok) {
+        //show success message and reset the form
+        msgEl.className = "form-msg success";
+        msgEl.textContent = data.message || "Sighting recorded - thank you!";
+        el("report-form").reset();
+
+        //update the total count in the hero so it reflects the new sighting
+        console.log("submit ok, fetching stats...");
+        const stats = await fetchJSON(`${API}/`);
+        console.log("stats response:", stats);
+        if (stats) {
+          el("stat-total").textContent = stats.sightings_in_database.toLocaleString();
+        }
+
+        //also refresh the map so the new sighting shows up straight away
+        refreshMap();
+
+      } else {
+        //show the error message from the API if there is one
+        msgEl.className = "form-msg error";
+        msgEl.textContent = data.detail || "Something went wrong. Please try again.";
+      }
+
+    } catch (err) {
+      msgEl.className = "form-msg error";
+      msgEl.textContent = "Could not reach the server. Please check it is running.";
+    }
+
+    btn.disabled = false;
+    btn.textContent = "Submit Sighting";
+  });
 });
