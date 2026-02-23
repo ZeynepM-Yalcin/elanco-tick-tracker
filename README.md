@@ -61,6 +61,14 @@ The external API call uses a two-layer try/except — ConnectionError is caught 
 •	App: http://localhost:8000/app
 •	API docs (Swagger UI): http://localhost:8000/docs
 
+### What I would do better with more time
+#### Wireframes
+I designed the UI directly in HTML and CSS using the brief's example screenshot as a rough reference point. In a real project I would sketch wireframes in Figma first, agreeing on layout and information hierarchy before writing code is faster overall, especially once stakeholder feedback is involved.
+#### Automated tests
+This is a practice I'm trying to do more in my projects. I would write pytest unit tests for the database functions, particularly the duplicate handling, date slicing, and zero-filling logic, and integration tests for each API endpoint using FastAPI's built-in TestClient. The fetchJSON() helper in the frontend would also be worth a Jest unit test.
+#### AI / ML insights
+The backend brief lists AI/ML insights as an extension task. I think the dataset has enough information to make this interesting. A linear regression on monthly sighting counts per city would tell you whether activity is trending up or down year on year, and a seasonal decomposition would let you predict likely high activity months. Python's scikit-learn could fit into the existing FastAPI stack for this and I think it is the kind of addition that would directly support Elanco's public health awareness goals for the tool.
+
 ## Requirements Coverage:
 ### Backend
 | Requirement   | Second Header | Notes |
@@ -88,6 +96,7 @@ The external API call uses a two-layer try/except — ConnectionError is caught 
 | --| --| --|
 | Accessibility features| Done| Semantic HTML, labels on all inputs, alt text, focus styles, contrast, responsive layout|
 | Wireframes|Not done |Layout designed directly in code, no separate wireframe documents produced |
+
 
 
 
