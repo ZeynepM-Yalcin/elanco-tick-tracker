@@ -69,6 +69,20 @@ This is a practice I'm trying to do more in my projects. I would write pytest un
 #### AI / ML insights
 The backend brief lists AI/ML insights as an extension task. I think the dataset has enough information to make this interesting. A linear regression on monthly sighting counts per city would tell you whether activity is trending up or down year on year, and a seasonal decomposition would let you predict likely high activity months. Python's scikit-learn could fit into the existing FastAPI stack for this and I think it is the kind of addition that would directly support Elanco's public health awareness goals for the tool.
 
+## How AI Was Used in This Project
+AI (Claude) was used throughout as a support tool, not to write the project for me. Specifically:
+
+- Debugging — when errors came up (like the missing image_path column or the counter not updating), I used AI to help diagnose what was wrong and understand why
+- Explaining concepts — when I didn't understand something (like how INSERT OR IGNORE works), I asked AI to explain it so I actually learned it
+- Talking through decisions — things like how to structure the API, how to handle the unreliable external Elanco endpoint, and how to present the demo
+- Checking my work — reviewing code I had already written to spot potential issues
+- Documentation - I used AI to clearly write the Readme and Architecture files
+
+** What AI was not used for: **
+- AI did not design the app or come up with the idea
+- All final decisions were made by me
+- I understood everything in the codebase and could explain any part of it
+
 ## Requirements Coverage:
 ### Backend
 | Requirement   | Second Header | Notes |
@@ -96,6 +110,7 @@ The backend brief lists AI/ML insights as an extension task. I think the dataset
 | --| --| --|
 | Accessibility features| Done| Semantic HTML, labels on all inputs, alt text, focus styles, contrast, responsive layout|
 | Wireframes|Not done |Layout designed directly in code, no separate wireframe documents produced |
+
 
 
 
