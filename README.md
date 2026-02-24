@@ -1,5 +1,5 @@
 # Elanco Data Analyst Technical Task - Tick Tracker
-**A detailed write up of my architecture decisions, data handling strategy and what I would improve with more time is in the separate Architecture document.** 
+**A SLIGHTLY more detailed write up of my architecture decisions, data handling strategy and what I would improve with more time is in the separate Architecture document.** 
 
 Demo video: https://www.youtube.com/watch?v=L6GflDgTeuM 
 - Backend: FastAPI (Python) + SQLite
@@ -110,6 +110,7 @@ AI (Claude) was used throughout as a support tool, not to write the project for 
 | --| --| --|
 | Accessibility features| Done| Semantic HTML, labels on all inputs, alt text, focus styles, contrast, responsive layout|
 | Wireframes|Not done |Layout designed directly in code, no separate wireframe documents produced |
+
 
 
 
